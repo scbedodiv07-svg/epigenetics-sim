@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epigenetics Virtual Lab</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Very light background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .lab-container {
+            max-width: 1000px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .risk-bar {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .dna-segment {
+            transition: all 0.5s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .tag {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        /* Style for active button: Blue ring and slight lift */
+        .btn-active {
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.6); 
+            transform: translateY(-1px);
+        }
+        /* Indicator Colors */
+        .indicator-on {
+            /* Matches Poor Lifestyle (Orange) button */
+            background-color: #F97316; /* Orange-600 */
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.8); 
+        }
+        .indicator-off {
+            /* Matches Healthy Lifestyle (Blue) button */
+            background-color: #2563EB; /* Blue-600 */
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="epigenetics-lab" class="lab-container">
+        <header class="p-6 bg-blue-600 text-white shadow-lg">
+            <h1 class="text-3xl font-extrabold tracking-tight">The Epigenetic Control Panel</h1>
+            <p class="mt-1 text-blue-200 text-lg text-justify">Explore the difference between genetics (the code) and epigenetics (the switch), and the significance of this.</p>
+        </header>
+
+        <main class="grid lg:grid-cols-5 gap-8 p-8">
+
+            <!-- Control Panel (Inputs) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="p-6 rounded-xl bg-white border border-gray-200 shadow-md">
+                    <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-indigo-400 pb-3 mb-4">
+                        1. Genetics: The Code
+                    </h2>
+                    <p class="text-sm text-gray-600 mb-4 text-justify">This code is already pre-determined at birth and defines the potential risk.</p>
+                    <label class="block text-lg font-semibold mb-3">Diabetes Risk Gene:</label>
+                    <div class="flex space-x-3">
+                        <!-- Wildtype Allele (Initial Active) -->
+                        <button id="gene-normal-btn" onclick="setGene('normal')" class="gene-btn text-white font-semibold py-3 px-5 rounded-lg transition duration-300 text-sm w-1/2 btn-active bg-pink-500 hover:bg-pink-600">
+                            Wildtype Allele (Typical Code)
+                        </button>
+                        <!-- Mutated Allele (Initial Inactive/Pale) -->
+                        <button id="gene-mutated-btn" onclick="setGene('mutated')" class="gene-btn text-white font-semibold py-3 px-5 rounded-lg transition duration-300 text-sm w-1/2 bg-purple-300 hover:bg-purple-400">
+                            Mutated Allele (Altered Code)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-xl bg-white border border-gray-200 shadow-md">
+                    <h2 class="text-2xl font-bold text-gray-800 border-b-2 border-indigo-400 pb-3 mb-4">
+                        2. Epigenetics: The Switch
+                    </h2>
+                    <p class="text-sm text-gray-600 mb-4 text-justify">These tags determine if the code is read (ACTIVE) or ignored (SILENCED).</p>
+                    <label class="block text-lg font-semibold mb-3">Lifestyle Influence:</label>
+                    <div class="flex space-x-3">
+                        <!-- Healthy Lifestyle (Initial Active) -->
+                        <button id="lifestyle-good-btn" onclick="setLifestyle('good')" class="lifestyle-btn text-white font-semibold py-3 px-5 rounded-lg transition duration-300 text-sm w-1/2 btn-active bg-blue-500 hover:bg-blue-600">
+                            Healthy Lifestyle
+                        </button>
+                        <!-- Poor Lifestyle (Initial Inactive/Pale) -->
+                        <button id="lifestyle-poor-btn" onclick="setLifestyle('poor')" class="lifestyle-btn text-white font-semibold py-3 px-5 rounded-lg transition duration-300 text-sm w-1/2 bg-orange-300 hover:bg-orange-400">
+                            Poor Lifestyle
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization and Result Panel -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Visualization -->
+                <div class="bg-gray-50 p-6 rounded-xl shadow-inner border border-gray-300">
+                    <h2 class="text-2xl font-bold mb-6 text-gray-700 border-b pb-2">The Gene and Control of Its Expression</h2>
+                    
+                    <!-- Increased top padding from pt-16 to pt-24 -->
+                    <div id="dna-visualization" class="relative flex flex-col items-center justify-center px-8 pt-24 pb-8 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                        
+                        <!-- Gene Activity Indicator (Fixed position at the top) -->
+                        <div id="activity-indicator-container" class="absolute top-4 left-1/2 transform -translate-x-1/2">
+                            <div id="activity-indicator" class="p-3 rounded-full w-32 flex items-center justify-center font-extrabold text-white text-sm transition duration-500 shadow-lg indicator-on">
+                                ACTIVE
+                            </div>
+                        </div>
+
+                        <!-- Epigenetic Tags / Lock Icon (Centered on the gene segment) -->
+                        <svg id="epigenetic-tag" class="tag absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[230%] z-10" 
+                            width="36" height="36" viewBox="0 0 24 24" stroke="#2563EB" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0;">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            <title>Epigenetic Tag (Methylation/Silencing)</title>
+                        </svg>
+                        
+                        <!-- Tag Label - Adjusted vertical translation for better placement relative to the lock -->
+                        <span id="tag-label" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[460%] translate-x-5 text-xs font-mono font-bold text-blue-700 opacity-0 transition duration-500">METHYL TAG ADDED</span>
+                        
+                        <!-- Gene Segment (The Code) -->
+                        <div id="gene-segment" class="dna-segment relative h-12 flex items-center justify-center rounded-full px-8 transition duration-500 border-4 border-dashed" style="width: 90%; max-w: 450px; background-color: #EC4899; border-color: #F472B6;">
+                            <span id="gene-text" class="text-white font-mono font-bold text-lg select-none">WILDTYPE ALLELE</span>
+                        </div>
+                        
+                        <p class="mt-4 text-sm text-gray-500 text-justify">
+                            The gene is the code. The tag determines if the code is read or ignored.
+                            <br><br>
+                            A methyl tag is one example of an epigenetic tag that silences a gene when added, preventing the code from being read. But there are other types of tags that promote gene activity when added.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Result & Explanation -->
+                <div class="space-y-4">
+                    <h2 class="text-2xl font-bold text-gray-800">3. The Outcome: Overall Clinical Risk</h2>
+                    <div class="bg-white p-6 rounded-xl border border-gray-300 shadow-md">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-lg font-semibold text-gray-700">Type 2 Diabetes Risk Index:</span>
+                            <span id="risk-level-text" class="text-2xl font-extrabold text-green-600">LOW</span>
+                        </div>
+                        <div class="h-6 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="risk-bar" class="risk-bar h-full rounded-full" style="width: 25%; background-color: #10B981;"></div>
+                        </div>
+
+                        <h3 class="text-xl font-bold mt-5 border-t pt-4">Simulation Summary:</h3>
+                        <p id="explanation-text" class="text-gray-700 leading-relaxed text-justify">
+                            You have a <b class='text-pink-600'>Wildtype Allele (Typical Code)</b> and a <b class='text-blue-600'>Healthy Lifestyle</b> (tags are added/present). The gene is operating normally, leading to the lowest possible health risk.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <script>
+        // Global state
+        let currentGene = 'normal'; // 'normal' or 'mutated'
+        let currentLifestyle = 'good'; // 'good' (more tags) or 'poor' (fewer tags)
+
+        // DOM Elements
+        const geneSegment = document.getElementById('gene-segment');
+        const geneText = document.getElementById('gene-text');
+        const tagIcon = document.getElementById('epigenetic-tag');
+        const tagLabel = document.getElementById('tag-label');
+        const activityIndicator = document.getElementById('activity-indicator');
+        const riskBar = document.getElementById('risk-bar');
+        const riskLevelText = document.getElementById('risk-level-text');
+        const explanationText = document.getElementById('explanation-text');
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSimulation();
+        });
+
+        // Function to update the genetic state
+        function setGene(state) {
+            currentGene = state;
+            const activeBtn = document.getElementById(`gene-${state}-btn`);
+            
+            // Deactivate all
+            document.querySelectorAll('.gene-btn').forEach(btn => {
+                const isPink = btn.id === 'gene-normal-btn';
+                
+                btn.classList.remove('btn-active');
+                
+                // Remove active colors and add pale colors
+                if (isPink) {
+                    btn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+                    btn.classList.add('bg-pink-300', 'hover:bg-pink-400');
+                } else {
+                    btn.classList.remove('bg-purple-500', 'hover:bg-purple-600');
+                    btn.classList.add('bg-purple-300', 'hover:bg-purple-400');
+                }
+            });
+
+            // Activate the selected button
+            activeBtn.classList.add('btn-active');
+            
+            const isActivePink = activeBtn.id === 'gene-normal-btn';
+
+            // Remove pale colors and add active colors
+            if (isActivePink) {
+                activeBtn.classList.remove('bg-pink-300', 'hover:bg-pink-400');
+                activeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+            } else {
+                activeBtn.classList.remove('bg-purple-300', 'hover:bg-purple-400');
+                activeBtn.classList.add('bg-purple-500', 'hover:bg-purple-600');
+            }
+
+            // Update visual (DNA segment)
+            if (state === 'mutated') {
+                // Purple theme for Mutated Allele
+                geneSegment.style.backgroundColor = '#9333EA'; // Purple-600
+                geneSegment.style.borderColor = '#C084FC'; // Purple-400
+                geneText.textContent = 'MUTATED ALLELE';
+            } else {
+                // Pink theme for Wildtype Allele
+                geneSegment.style.backgroundColor = '#EC4899'; // Pink-500
+                geneSegment.style.borderColor = '#F472B6'; // Pink-400
+                geneText.textContent = 'WILDTYPE ALLELE';
+            }
+
+            updateSimulation();
+        }
+
+        // Function to update the lifestyle/epigenetic state
+        function setLifestyle(state) {
+            currentLifestyle = state;
+            const activeBtn = document.getElementById(`lifestyle-${state}-btn`);
+
+            // Deactivate all
+            document.querySelectorAll('.lifestyle-btn').forEach(btn => {
+                const isBlue = btn.id === 'lifestyle-good-btn';
+                
+                btn.classList.remove('btn-active');
+
+                // Remove active colors and add pale colors
+                if (isBlue) {
+                    btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                    btn.classList.add('bg-blue-300', 'hover:bg-blue-400');
+                } else {
+                    btn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                    btn.classList.add('bg-orange-300', 'hover:bg-orange-400');
+                }
+            });
+
+            // Activate the selected button
+            activeBtn.classList.add('btn-active');
+            
+            const isActiveBlue = activeBtn.id === 'lifestyle-good-btn';
+
+            // Remove pale colors and add active colors
+            if (isActiveBlue) {
+                activeBtn.classList.remove('bg-blue-300', 'hover:bg-blue-400');
+                activeBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            } else {
+                activeBtn.classList.remove('bg-orange-300', 'hover:bg-orange-400');
+                activeBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            }
+
+            updateSimulation();
+        }
+
+        // Main function to run the simulation logic and update the UI
+        function updateSimulation() {
+            let risk = 0; // Base risk score (0 to 100)
+            let geneIsActive = true; // Is the gene being read (expressed)?
+            let explanation = "";
+            let riskLevel = "";
+
+            // --- 1. Determine Gene Activity (Epigenetic Control) ---
+            if (currentLifestyle === 'good') {
+                // Healthy Lifestyle (Lots of Tags) -> Gene is SILENCED (Off)
+                geneIsActive = false;
+                tagIcon.style.opacity = 1;
+                tagLabel.style.opacity = 1;
+                
+                // Add visual indicator of silencing on the gene segment
+                geneSegment.classList.add('opacity-70', 'grayscale');
+                
+            } else {
+                // Poor Lifestyle (Few Tags) -> Gene is READ (On)
+                geneIsActive = true;
+                tagIcon.style.opacity = 0;
+                tagLabel.style.opacity = 0;
+                
+                // Remove visual silencing indicator
+                geneSegment.classList.remove('opacity-70', 'grayscale');
+            }
+
+
+            // --- 2. Determine Health Risk (The Outcome) ---
+
+            if (currentGene === 'normal') {
+                // Case A: Wildtype Allele (Code is safe)
+                riskLevel = "LOW";
+
+                if (currentLifestyle === 'good') {
+                    risk = 20; // Base Low Risk
+                    activityIndicator.textContent = "SILENCED";
+                    activityIndicator.classList.remove('indicator-on');
+                    activityIndicator.classList.add('indicator-off');
+                    explanation = "You have a <b class='text-pink-600'>Wildtype Allele (Typical Code)</b> and a <b class='text-blue-600'>Healthy Lifestyle</b> (tags are added/present). The gene is functioning as expected, and your risk is minimal.";
+                } else {
+                    // Wildtype Allele but a Poor Lifestyle -> MODERATE RISK
+                    risk = 55; 
+                    riskLevel = "MODERATE";
+                    activityIndicator.textContent = "ACTIVE";
+                    activityIndicator.classList.remove('indicator-off');
+                    activityIndicator.classList.add('indicator-on'); // Gene is read, but it's the normal one
+                    
+                    explanation = "You have a <b class='text-pink-600'>Wildtype Allele (Typical Code)</b> but a <b class='text-orange-600'>Poor Lifestyle</b> (tags are absent). While your genetic predisposition for the disease is not as high, poor lifestyle significantly elevates health risks through other biological pathways (e.g. inflammation, insulin resistance), resulting in a moderate risk level.";
+                }
+
+            } else if (currentGene === 'mutated') {
+                // Case B: Mutated Allele (Code is risky)
+                
+                if (geneIsActive) {
+                    // Epigenetics is BAD (Tags are gone), so the Mutated Allele is READ (Expressed)
+                    risk = 95; // Highest Risk
+                    riskLevel = "HIGH";
+                    activityIndicator.textContent = "ACTIVE";
+                    activityIndicator.classList.remove('indicator-off');
+                    activityIndicator.classList.add('indicator-on');
+                    
+                    explanation = "You have a <b class='text-purple-600'>Mutated Allele (Altered Code)</b> and a <b class='text-orange-600'>Poor Lifestyle</b> (tags are absent). Without tags that silence gene expression, the mutated allele is <b class='text-red-600'>ACTIVE</b> and the altered code is being read by the cell, leading to the highest disease risk.";
+
+                } else {
+                    // Epigenetics is GOOD (Tags are present), so the Mutated Allele is SILENCED (Off)
+                    risk = 45; // Risk is significantly lowered
+                    riskLevel = "MODERATE";
+                    activityIndicator.textContent = "SILENCED";
+                    activityIndicator.classList.remove('indicator-on');
+                    activityIndicator.classList.add('indicator-off');
+                    
+                    explanation = "You have a <b class='text-purple-600'>Mutated Allele (Altered Code)</b> but a <b class='text-blue-600'>Healthy Lifestyle</b> (tags are added/present). The tags effectively <b class='text-blue-700'>SILENCE the mutated allele</b>, preventing the code from being read. This is a powerful example of <b class='text-blue-600'>epigenetic override</b> where lifestyle mitigates a risky genetic predisposition!";
+                }
+            }
+
+
+            // --- 3. Update Output UI ---
+
+            // Update Risk Bar
+            riskBar.style.width = `${risk}%`;
+            if (risk < 40) {
+                riskBar.style.backgroundColor = '#10B981'; // Green
+                riskLevelText.className = 'text-2xl font-extrabold text-green-600';
+            } else if (risk < 75) {
+                riskBar.style.backgroundColor = '#F59E0B'; // Amber
+                riskLevelText.className = 'text-2xl font-extrabold text-yellow-600';
+            } else {
+                riskBar.style.backgroundColor = '#EF4444'; // Red
+                riskLevelText.className = 'text-2xl font-extrabold text-red-600';
+            }
+            riskLevelText.textContent = riskLevel;
+
+            // Update Explanation
+            explanationText.innerHTML = explanation;
+        }
+
+        // Set initial state after DOM is ready
+        // We call setGene and setLifestyle to ensure the initial active/pale classes are set correctly.
+        setGene(currentGene);
+        setLifestyle(currentLifestyle);
+    </script>
+
+</body>
+</html>
